@@ -44,7 +44,7 @@ class _SimpleChartState extends State<SimpleChart>
   ];
   late AnimationController _controller;
   late Animation<double> _curve;
-  late Animation<double> _animation;
+  late List<Animation<Color?>> _animations;
 
   @override
   void initState() {
@@ -52,10 +52,40 @@ class _SimpleChartState extends State<SimpleChart>
     _controller =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
     _curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-    _animation =
-        Tween<double>(begin: 0, end: _controller.value).animate(_curve);
+
+    _animations = List.generate(data.length, (index) {
+      return ColorTween(
+        begin: Colors.transparent,
+        end: colors[index],
+      ).animate(_curve);
+    });
 
     _controller.forward();
+  }
+
+  List<Color> generateRandomColors() {
+    return List.generate(data.length, (index) {
+      return Color.fromRGBO(
+        Random().nextInt(256),
+        Random().nextInt(256),
+        Random().nextInt(256),
+        1,
+      );
+    });
+  }
+
+  void _changeColors() {
+    setState(() {
+      colors = generateRandomColors();
+      _animations = List.generate(data.length, (index) {
+        return ColorTween(
+          begin: Colors.transparent,
+          end: colors[index],
+        ).animate(_curve);
+      });
+      _controller.reset();
+      _controller.forward();
+    });
   }
 
   @override
@@ -71,26 +101,20 @@ class _SimpleChartState extends State<SimpleChart>
                 height: 300.0,
                 width: 300.0,
                 child: CustomPaint(
-                  painter: ChartPainter(data, colors, _controller.value),
+                  painter: ChartPainter(
+                      data, colors, _animations, _controller.value),
                 ),
               );
             },
           ),
         ),
         const SizedBox(height: 20),
-        ElevatedButton(onPressed: _changeColors, child: const Text("Magic!")),
+        ElevatedButton(
+          onPressed: _changeColors,
+          child: const Text("Magic!"),
+        ),
       ],
     );
-  }
-
-  Random random = Random();
-  void _changeColors() {
-    setState(() {
-      for (int i = 0; i < data.length; i++) {
-        colors[i] = Color.fromRGBO(
-            random.nextInt(256), random.nextInt(256), random.nextInt(256), 1);
-      }
-    });
   }
 
   @override
@@ -103,9 +127,10 @@ class _SimpleChartState extends State<SimpleChart>
 class ChartPainter extends CustomPainter {
   final List<double> data;
   final List<Color> colors;
+  final List<Animation<Color?>> animations;
   final double animationValue;
 
-  ChartPainter(this.data, this.colors, this.animationValue);
+  ChartPainter(this.data, this.colors, this.animations, this.animationValue);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -120,7 +145,11 @@ class ChartPainter extends CustomPainter {
           animationValue; //переведення кута у радіани
 
       Paint slicePaint = Paint()
-        ..color = colors[i % colors.length]
+        ..color = Color.lerp(
+          colors[i % colors.length],
+          animations[i].value,
+          animationValue,
+        )!
         ..style = PaintingStyle.fill;
 
       canvas.drawArc(Rect.fromLTWH(0, 0, size.width, size.height), startAngle,
