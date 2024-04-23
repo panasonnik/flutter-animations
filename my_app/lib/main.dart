@@ -17,10 +17,6 @@ class MyApp extends StatelessWidget {
         child: Scaffold(
           appBar: AppBar(
             title: const Text("My chart"),
-            actions: const [
-              Icon(Icons.play_arrow_rounded),
-              SizedBox(width: 18.0),
-            ],
           ),
           body: SimpleChart(),
         ),
@@ -29,9 +25,15 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class SimpleChart extends StatelessWidget {
-  SimpleChart({super.key});
+class SimpleChart extends StatefulWidget {
+  const SimpleChart({super.key});
 
+  @override
+  State<SimpleChart> createState() => _SimpleChartState();
+}
+
+class _SimpleChartState extends State<SimpleChart>
+    with SingleTickerProviderStateMixin {
   final List<double> data = [20, 30, 50, 40, 70];
   final List<Color> colors = [
     Colors.red,
@@ -40,27 +42,48 @@ class SimpleChart extends StatelessWidget {
     Colors.orange,
     Colors.purple
   ];
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: Duration(seconds: 2));
+    _controller.forward();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        height: 300.0,
-        width: 300.0,
-        child: CustomPaint(
-          painter: ChartPainter(data, colors),
-        ),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Container(
+            padding: const EdgeInsets.all(16.0),
+            height: 300.0,
+            width: 300.0,
+            child: CustomPaint(
+              painter: ChartPainter(data, colors, _controller.value),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }
 
 class ChartPainter extends CustomPainter {
   final List<double> data;
   final List<Color> colors;
+  final double animationValue;
 
-  ChartPainter(this.data, this.colors);
+  ChartPainter(this.data, this.colors, this.animationValue);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -69,8 +92,10 @@ class ChartPainter extends CustomPainter {
     double startAngle = 0;
 
     for (int i = 0; i < data.length; i++) {
-      double sweepAngle =
-          (data[i] / total) * 2 * pi; //переведення кута у радіани
+      double sweepAngle = (data[i] / total) *
+          2 *
+          pi *
+          animationValue; //переведення кута у радіани
 
       Paint slicePaint = Paint()
         ..color = colors[i % colors.length]
