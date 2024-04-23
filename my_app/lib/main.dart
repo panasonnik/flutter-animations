@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
           appBar: AppBar(
             title: const Text("My chart"),
           ),
-          body: SimpleChart(),
+          body: const SimpleChart(),
         ),
       ),
     );
@@ -35,7 +35,7 @@ class SimpleChart extends StatefulWidget {
 class _SimpleChartState extends State<SimpleChart>
     with SingleTickerProviderStateMixin {
   final List<double> data = [20, 30, 50, 40, 70];
-  final List<Color> colors = [
+  List<Color> colors = [
     Colors.red,
     Colors.green,
     Colors.blue,
@@ -43,32 +43,54 @@ class _SimpleChartState extends State<SimpleChart>
     Colors.purple
   ];
   late AnimationController _controller;
+  late Animation<double> _curve;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
     _controller =
-        AnimationController(vsync: this, duration: Duration(seconds: 2));
+        AnimationController(vsync: this, duration: const Duration(seconds: 2));
+    _curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _animation =
+        Tween<double>(begin: 0, end: _controller.value).animate(_curve);
+
     _controller.forward();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Container(
-            padding: const EdgeInsets.all(16.0),
-            height: 300.0,
-            width: 300.0,
-            child: CustomPaint(
-              painter: ChartPainter(data, colors, _controller.value),
-            ),
-          );
-        },
-      ),
+    return Column(
+      children: [
+        Center(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Container(
+                padding: const EdgeInsets.all(16.0),
+                height: 300.0,
+                width: 300.0,
+                child: CustomPaint(
+                  painter: ChartPainter(data, colors, _controller.value),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton(onPressed: _changeColors, child: const Text("Magic!")),
+      ],
     );
+  }
+
+  Random random = Random();
+  void _changeColors() {
+    setState(() {
+      for (int i = 0; i < data.length; i++) {
+        colors[i] = Color.fromRGBO(
+            random.nextInt(256), random.nextInt(256), random.nextInt(256), 1);
+      }
+    });
   }
 
   @override
