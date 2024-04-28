@@ -10,8 +10,9 @@ class SimpleChart extends StatefulWidget {
 
 class _SimpleChartState extends State<SimpleChart>
     with SingleTickerProviderStateMixin {
-  final List<double> data = [20, 30, 50, 40, 70];
+  final List<double> data = [20, 30, 50, 40, 70]; //значення на діаграмі
   List<Color> colors = [
+    //початкові кольори сегментів
     Colors.red,
     Colors.green,
     Colors.blue,
@@ -20,14 +21,16 @@ class _SimpleChartState extends State<SimpleChart>
   ];
   late AnimationController _controller;
   late Animation<double> _curve;
-  late List<Animation<Color?>> _animations;
+  late List<Animation<Color?>> _animations; //список анімацій для зміни кольорів
 
   @override
   void initState() {
     super.initState();
     _controller =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    _curve = CurvedAnimation(parent: _controller, curve: Curves.bounceIn);
+    _curve = CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut); //плавні анімації за доп кривої
 
     _animations = List.generate(data.length, (index) {
       return ColorTween(
@@ -119,10 +122,11 @@ class ChartPainter extends CustomPainter {
       double sweepAngle = (data[i] / total) *
           2 *
           pi *
-          animationValue; //переведення кута у радіани
+          animationValue; //обчислення кута сегменту
 
-      Paint slicePaint = Paint()
+      Paint slicePaint = Paint() //малювання сегментів діаграми
         ..color = Color.lerp(
+          //лін інтерполяція між початковим кольором та значенням анімації
           colors[i % colors.length],
           animations[i].value,
           animationValue,
@@ -131,7 +135,7 @@ class ChartPainter extends CustomPainter {
 
       canvas.drawArc(Rect.fromLTWH(0, 0, size.width, size.height), startAngle,
           sweepAngle, true, slicePaint);
-      startAngle += sweepAngle;
+      startAngle += sweepAngle; //початковий кут дуги += обсяг дуги
     }
   }
 
